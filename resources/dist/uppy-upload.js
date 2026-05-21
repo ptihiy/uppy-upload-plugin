@@ -24,13 +24,13 @@
 
     function loadUppyModule(version) {
         if (!uppyModulePromise) {
-            uppyModulePromise = import('https://releases.transloadit.com/uppy/v' + version + '/uppy.min.mjs');
+            uppyModulePromise = import('/dist/uppy/uppy.min.mjs');
         }
         return uppyModulePromise;
     }
 
     function loadCss(version) {
-        var url = 'https://releases.transloadit.com/uppy/v' + version + '/uppy.min.css';
+        var url = '/dist/uppy/uppy.min.css';
         if (document.querySelector('link[href="' + url + '"]')) return;
         var link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -39,19 +39,6 @@
     }
 
     async function loadUppyLocale(version, locale) {
-        if (!locale || locale === 'en') return null;
-        var uppyLocale = UPPY_LOCALE_MAP[locale] || UPPY_LOCALE_MAP[locale.split('_')[0]] || UPPY_LOCALE_MAP[locale.split('-')[0]];
-        if (!uppyLocale) return null;
-        if (uppyLocaleCache[uppyLocale]) return uppyLocaleCache[uppyLocale];
-        try {
-            var url = 'https://releases.transloadit.com/uppy/locales/v4.3.0/' + uppyLocale + '.min.js';
-            var resp = await fetch(url);
-            if (!resp.ok) return null;
-            var text = await resp.text();
-            var fn = new Function(text + '; return globalThis.Uppy && globalThis.Uppy.locales && globalThis.Uppy.locales.' + uppyLocale + ';');
-            var loc = fn();
-            if (loc) { uppyLocaleCache[uppyLocale] = loc; return loc; }
-        } catch (e) { console.warn('[UppyUpload] Failed to load locale ' + uppyLocale + ':', e); }
         return null;
     }
 
@@ -132,7 +119,7 @@
                     if (!el) { this.isLoading = false; return; }
 
                     var old = uppyInstances.get(el);
-                    if (old) { try { old.cancelAll(); old.close(); } catch (e) {} uppyInstances.delete(el); }
+                    if (old) { try { old.cancelAll(); old.close(); } catch (e) { } uppyInstances.delete(el); }
 
                     var version = config.uppyVersion || '5.2.1';
                     var mod = await loadUppyModule(version);
@@ -176,7 +163,7 @@
                     if (config.audio !== false && mod.Audio) uppy.use(mod.Audio, { target: mod.Dashboard, showRecordingLength: true });
                     if (config.imageEditor !== false && mod.ImageEditor) uppy.use(mod.ImageEditor, { target: mod.Dashboard, quality: 0.8 });
                     if (mod.Compressor) uppy.use(mod.Compressor, { quality: 0.8, limit: 10 });
-                    if (config.dragDrop !== false && mod.DropTarget) { try { uppy.use(mod.DropTarget, { target: document.body }); } catch (e) {} }
+                    if (config.dragDrop !== false && mod.DropTarget) { try { uppy.use(mod.DropTarget, { target: document.body }); } catch (e) { } }
 
                     if (config.companionUrl && mod.RemoteSources) {
                         try {
@@ -254,7 +241,7 @@
 
                 async _rmServer(path) {
                     if (!config.deleteEndpoint) return;
-                    try { await fetch(config.deleteEndpoint, { method: 'POST', headers: { 'X-CSRF-TOKEN': getCsrf(), 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ path: path, disk: config.disk || 'public' }) }); } catch (e) {}
+                    try { await fetch(config.deleteEndpoint, { method: 'POST', headers: { 'X-CSRF-TOKEN': getCsrf(), 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ path: path, disk: config.disk || 'public' }) }); } catch (e) { }
                 },
 
                 _syncExisting(uppy, paths) {
@@ -263,13 +250,13 @@
                         try {
                             var id = uppy.addFile({ name: nm, type: guessMime(nm), data: new Blob(['']), source: 'existing', isRemote: false });
                             uppy.setFileState(id, { progress: { uploadComplete: true, uploadStarted: Date.now(), bytesUploaded: 1, bytesTotal: 1, percentage: 100 }, response: { status: 200, body: { path: p, filename: nm } } });
-                        } catch (e) {}
+                        } catch (e) { }
                     });
                 },
 
                 destroy() {
                     var el = this.$refs.uppyDashboard;
-                    if (el) { var uppy = uppyInstances.get(el); if (uppy) { try { uppy.cancelAll(); uppy.close(); } catch (e) {} uppyInstances.delete(el); } }
+                    if (el) { var uppy = uppyInstances.get(el); if (uppy) { try { uppy.cancelAll(); uppy.close(); } catch (e) { } uppyInstances.delete(el); } }
                 },
             };
         });
